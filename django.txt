@@ -1,0 +1,221 @@
+notes of django
+virtual environment is a place on your system where you can install packages
+and isolate them from all other Python packages.
+
+python -m venv ll_env
+ll_env/scripts/activate
+pip install django
+
+#creating a project in django___________________________________________________________________________________________
+
+django-admin startproject learning_log .                  #in new version of django django-admin.py is not used.
+ls
+ls learning_log
+
+
+#creating database_______________________________________________________________________________________________________
+
+python manage.py migrate
+python manage.py runserver
+
+#starting an app________________________________________________________________________________________________________
+after deactivating when you start the terminal again....
+
+ll_env/scripts/activate
+python manage.py startapp learning_logs          #The command startapp appname tells Django to create the infrastructure needed to build an app.
+ls
+ls learning_logs/
+
+_________________________________________________________________________________________________defining models____________________________________________________________________________
+
+Code-wise, a model is just a class; it has attributes and methods, just like every class.
+
+at models.py
+
+from django.db import models
+
+class Topic(models.Model):                            #making a class Topic by inheriting from models.
+     """a topic that the user is learning about"""
+     text=models.CharField(max_length=200)            #CharField stores text and also we have to specify max lentgh.
+     date_added=models.DateTimeField(auto_now_add=True) #dateTimeField automatically stores date and time.            
+
+     def __str__(self):
+         """return a string representation of the model"""
+         return self.text     
+____________________________________________________________________________________________________________________________________________________________________________________________We need to tell Django which attribute to use by default when it displays
+information about a topic. Django calls a __str__() method to display
+a simple representation of a model. Here we’ve written a __str__() method
+that returns the string stored in the text attribute
+____________________________________________________________________________________________________________________________________________________________________________________________
+#activating models
+
+at setting.py
+This is just a tuple, telling Django which apps work together to make up the project. Add our app to this tuple by modifying INSTALLED_APPS 
+INSTALLED_APPS = (
+--snip--
+'django.contrib.staticfiles',
+# My apps
+'learning_logs',
+)
+--snip--
+Next, we need to tell Django to modify the database so it can store information related to the model Topic.
+____________________________________________________________________________________________________________________________________________________________________________________________
+now run command....
+
+python manage.py makemigrations learning_logs       #The output here shows that Django has created a migration file called 0001_initial.py.The output here shows that Django has created  a  python manage.py migrate                             model topic in the database                             
+
+#Whenever we want to modify the data that Learning Log manages,
+we’ll follow these three steps: modify models.py, call makemigrations on
+learning_logs, and tell Django to migrate the project.
+____________________________________________________________________________________________________________________________________________________________________________________________
+
+-------------------------------------------------------------------------------THE DJANGO ADMIN SITE----------------------------------------------------------------------------------------
+#creating a superuser...
+python manage.py createsuperuser
+username:ll_admin
+Email:
+password:
+password(again):
+
+#registering a model in the admin site.....
+Django includes some models in the admin site automatically, such as User and Group, but the models we create need to be registered manually.
+at admin.py (in the same directory as models.py)
+____________________________________________________________________________________________________________________________________________________________________________________________now, at admin.py...
+from django.contrib import admin
+from learning_logs.models import Topic                    #importing Topic cauze we need to register it to the admin site
+admin.site.register(Topic)                               #manages our model through the adamin site
+
+#aur ha vai,python manage.py runserver marke hi broweser pe dalna http://localhost:8000/admin/   fir jo page khulega uspe superuser id aur password dalk ghus jana andar aur ek database type ka window khul jayega.
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+DEFINING THE ENTRY MODELS.....
+at models.py
+.
+.
+.snipet.
+       .
+       .
+class Entry(models.Model):
+    """Something specific learned about a topic"""
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE)    #ye "on_delete" django 2.o k bad se ForeignKey fields k liye mandetory hai.
+    text = models.TextField()
+    date_added = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        verbose_name_plural = 'entries'
+    def __str__(self):
+        """Return a string representation of the model."""
+        return self.text[:50] + "..."
+________________________________________________________________________________________________________________________________________
+............................................Making Pages: The Learning Log Home Page............................................
+at learning_log/urls.py..
+from django.contrib import admin
+from django.urls import path,include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('',include('learning_logs.urls'))
+]
+
+
+at learning_logs/urls.py..                              #have to create the file.
+"""defines url patterns for learning_logs"""
+from django.urls import path
+from . import views
+app_name='learning_logs'
+urlpatterns = [
+    # home page
+    path('',views.index, name='index'),
+]
+
+
+at learning_logs/views.py...
+from django.shortcuts import render
+
+def index(request):
+    """the home page for learning log"""
+    return render(request,'learning_logs/index.html')
+
+
+at learning_logs/templates/learning_logs/index.html..
+<p>kanishk vai</p>
+<p> kanishk vai kiase ho. jyad amaat pado. chill maro yaar .padai shadai toh hote rahega .
+</p>
+
+now just go to the terminal and run the server and click to djnago home page not the admin page. you will se the html effect babe.
+________________________________________________________________________________________________________________________________________
+"""now lets make the site dynamic with click effects
+at learning_log/urls.py........(modify it with)...
+from django.contrib import admin
+from django.urls import path,include
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('',include('learning_logs.urls'))
+]
+........................................................................................................................................
+:::now create a urls.py file inside the learning_logs app.
+at learning_logs/urls.py...(have the following code)..
+"""defines url patterns for learning_logs"""
+from django.urls import path
+from . import views
+app_name='learning_logs'
+urlpatterns = [
+    path('',views.index, name='index'),#routes the request to a view at view.py
+    # Page that shows all topics.
+    path('topics/', views.topics, name='topics'),
+]
+........................................................................................................................................
+now make a folder templates/learning_logs/base.html
+at learning_logs/templates/learning_logs/base.html...
+<p>
+    <a href="{% url 'learning_logs:index' %}">Learning Log</a> -<!-- redirects to urls.py -->
+    <a href="{% url 'learning_logs:topics' %}">Topics</a><!-- redirects to urls.py -->   
+</p>
+{% block content %}{% endblock content%}
+........................................................................................................................................at learning_logs/templates/learning_logs/index.html...
+{% extends 'learning_logs/base.html' %}
+{% block content %}
+<h1>LEARNING DJANGO..</h1>
+<p>
+    learning log is the webpage i wanted you to see. dfhiudnkl idfhido nkoa adfhioh ioajia ioajfio asoji ioajiaojio a ja jioajfio ofjklj 
+</p>
+{% endblock content %}
+........................................................................................................................................
+at learning_logs/templates/learning_logs/topics.html....
+{% extends 'learning_logs/base.html'%}
+{%block content %}
+    <p>topics</p>
+    <ul>
+        {% for topic in topics%}
+         <li>{{ topic.text }}</li>
+        {% empty %}
+         <li>No topics have been added yet.</li>
+        {% endfor %}
+    </ul>
+{% endblock content %}
+........................................................................................................................................
+at learning_logs/views.py....
+from django.shortcuts import render
+
+from learning_logs.models import Topic
+def index(request):
+    """the home page for learning log"""
+    return render(request,'learning_logs/index.html')
+
+def topics(request):
+    """show all topics"""
+    topics=Topic.objects.order_by('date_added')
+    context={'topics':topics}
+    return render(request,'learning_logs/topics.html', context)
+________________________________________________________________________________________________________________________________________
+now refresh the web page or runserver again you will see some buttons. you can style it with css but not needed
+________________________________________________________________________________________________________________________________________
+cd /mnt/c/Users/Hp/Desktop/Learning_log #for changing directory in ubuntu
+
+
+
+
+
+
+
+
+
