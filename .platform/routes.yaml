@@ -1,7 +1,7 @@
 # Each route describes how an incoming URL will be processed by Platform.sh.
 "https://{default}/":
   type: upstream
-  upstream: "learning_logs:http"
+  upstream: "learning_log:http"
   
 "https://www.{default}/":
   type: redirect
